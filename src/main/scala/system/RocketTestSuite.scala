@@ -129,7 +129,7 @@ object DefaultTestSuites {
   val rv64uiNames = LinkedHashSet("addw", "addiw", "ld", "lwu", "sd", "slliw", "sllw", "sltiu", "sltu", "sraiw", "sraw", "srliw", "srlw", "subw")
   val rv64ui = new AssemblyTestSuite("rv64ui", rv32uiNames ++ rv64uiNames)(_)
 
-  val rv64umNames = LinkedHashSet("divuw", "divw", "mulw", "remuw", "remw")
+  val rv64umNames = LinkedHashSet("divuw", "divw", "mulw", "remuw", "remw", "mod")
   val rv64um = new AssemblyTestSuite("rv64um", rv32umNames ++ rv64umNames)(_)
 
   val rv64uaSansLRSCNames = rv32uaSansLRSCNames.map(_.replaceAll("_w","_d"))
