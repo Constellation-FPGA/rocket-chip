@@ -1075,7 +1075,17 @@ class CSRFile(
       reg_mstatus.spie := reg_mstatus.sie
       reg_mstatus.spp := reg_mstatus.prv
       reg_mstatus.sie := false.B
-      new_prv := PRV.S.U
+      /* Delegate illegal instruction exceptions to user-mode in a really hacky
+       * way. This is not the nicest way to do this, but it works for our initial
+       * investigations. */
+      /* NOTE: We hard-code delegation of illegal instruction exceptions, but
+       * RISC-V reserves some exception encodings for future use AND designates
+       * some for custom use that we can more easily hook. */
+      when (cause === Causes.illegal_instruction.U) {
+        new_prv := PRV.U.U
+      }.otherwise {
+        new_prv := PRV.S.U
+      }
     }.otherwise {
       reg_mstatus.v := false.B
       reg_mstatus.mpv := reg_mstatus.v
