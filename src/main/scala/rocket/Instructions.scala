@@ -929,6 +929,11 @@ object CSRs {
   val stopei = 0x15c
   val satp = 0x180
   val scontext = 0x5a8
+
+  /* Pipelined Interrupts/Exceptions CSRs */
+  val starget = 0x5c0
+  /* End of Pipelined Interrupts/Exceptions CSRs*/
+
   val vsstatus = 0x200
   val vsie = 0x204
   val vstvec = 0x205
@@ -1350,6 +1355,9 @@ object CSRs {
     res += sstateen2
     res += sstateen3
     res += sscratch
+    /* Pipelined Interrupts */
+    res += starget
+    /* End of Pipelined Interrupts */
     res += sepc
     res += scause
     res += stval
