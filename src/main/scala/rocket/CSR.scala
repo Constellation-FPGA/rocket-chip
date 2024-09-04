@@ -566,6 +566,13 @@ class CSRFile(
   val reg_vstval = Reg(UInt(vaddrBitsExtended.W))
   val reg_vsatp = Reg(new PTBR)
 
+  /* Pipelined Interrupts/Exceptions. */
+  /* starget is the virtual address the user-mode code installs with a system
+   * call. When a pipelined interrupt/exception reaches the core, this is the
+   * virtual address that PC will be changed to. */
+  val reg_starget = RegInit(0.U(vaddrBitsExtended.W))
+  /* End of Pipelined Interrupts/Exceptions. */
+
   val reg_sepc = Reg(UInt(vaddrBitsExtended.W))
   val reg_scause = Reg(Bits(xLen.W))
   val reg_stval = Reg(UInt(vaddrBitsExtended.W))
@@ -649,6 +656,7 @@ class CSRFile(
   val read_mstatus = io.status.asUInt.extract(xLen-1,0)
   val read_mtvec = formTVec(reg_mtvec).padTo(xLen)
   val read_stvec = formTVec(reg_stvec).sextTo(xLen)
+  val read_starget = formTVec(reg_starget).sextTo(xLen)
 
   val read_mapping = LinkedHashMap[Int,Bits](
     CSRs.tselect -> reg_tselect,
@@ -773,6 +781,7 @@ class CSRFile(
     read_mapping += CSRs.stval -> reg_stval.sextTo(xLen)
     read_mapping += CSRs.satp -> reg_satp.asUInt
     read_mapping += CSRs.sepc -> readEPC(reg_sepc).sextTo(xLen)
+    read_mapping += CSRs.starget -> read_starget
     read_mapping += CSRs.stvec -> read_stvec
     read_mapping += CSRs.scounteren -> read_scounteren
     read_mapping += CSRs.mideleg -> read_mideleg
@@ -1372,6 +1381,7 @@ class CSRFile(
       }
       when (decoded_addr(CSRs.sie))      { reg_mie := (reg_mie & ~sie_mask) | (wdata & sie_mask) }
       when (decoded_addr(CSRs.sscratch)) { reg_sscratch := wdata }
+      when (decoded_addr(CSRs.starget))  { reg_starget := wdata }
       when (decoded_addr(CSRs.sepc))     { reg_sepc := formEPC(wdata) }
       when (decoded_addr(CSRs.stvec))    { reg_stvec := wdata }
       when (decoded_addr(CSRs.scause))   { reg_scause := wdata & scause_mask }
