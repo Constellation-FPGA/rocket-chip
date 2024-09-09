@@ -1012,7 +1012,9 @@ class CSRFile(
     log2Ceil(xLen)
   }
   val notDebugTVec = {
-    val base = Mux(delegate, Mux(delegateVS, read_vstvec, read_stvec), read_mtvec)
+    val base = Mux(delegate, Mux(delegateVS, read_vstvec,
+                                             Mux(pipelinedDelegate, read_starget, read_stvec)),
+                             read_mtvec)
     val interruptOffset = cause(mtvecInterruptAlign-1, 0) << mtvecBaseAlign
     val interruptVec = Cat(base >> (mtvecInterruptAlign + mtvecBaseAlign), interruptOffset)
     val doVector = base(0) && cause(cause.getWidth-1) && (cause_lsbs >> mtvecInterruptAlign) === 0.U
@@ -1118,7 +1120,7 @@ class CSRFile(
       /* NOTE: We hard-code delegation of illegal instruction exceptions, but
        * RISC-V reserves some exception encodings for future use AND designates
        * some for custom use that we can more easily hook. */
-      when (cause === Causes.illegal_instruction.U) {
+      when (pipelinedDelegate) {
         new_prv := PRV.U.U
       }.otherwise {
         new_prv := PRV.S.U
@@ -1168,6 +1170,7 @@ class CSRFile(
         reg_mstatus.spp := PRV.U.U
         ret_prv := reg_mstatus.spp
         reg_mstatus.v := usingHypervisor.B && reg_hstatus.spv
+        // TODO: Need to put pipelined interrupts in here for URET!
         io.evec := readEPC(reg_sepc)
         reg_hstatus.spv := false.B
       }.otherwise {
