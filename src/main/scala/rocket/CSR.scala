@@ -453,6 +453,13 @@ class CSRFile(
     ++ (if (usingHypervisor) delegable_hypervisor_exceptions else Seq())
   ).map(1 << _).sum.U
 
+  val delegable_pipelined_exceptions = Seq(
+    Causes.illegal_instruction,
+  ).map(1 << _).sum.U
+
+  val delegable_pipelined_interrupts = Seq(
+  ).map(1 << _).sum.U
+
   val hs_delegable_exceptions = Seq(
     Causes.misaligned_fetch,
     Causes.fetch_access,
