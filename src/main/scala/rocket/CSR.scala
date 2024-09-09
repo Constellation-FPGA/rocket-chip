@@ -567,6 +567,23 @@ class CSRFile(
   val reg_vsatp = Reg(new PTBR)
 
   /* Pipelined Interrupts/Exceptions. */
+  /* The read_sXdeleg functions allow us to mask off events that we will never
+   * allow to be delegated. This allows us to implement WARL (Write Any, Read
+   * Legal).*/
+  val (reg_sedeleg, read_sedeleg) = {
+    val reg = Reg(UInt(xLen.W))
+    (reg, Mux(usingSupervisor.B,
+      // reg & delegable_exceptions | delegable_pipelined_exceptions,
+      reg & delegable_pipelined_exceptions,
+      0.U))
+  }
+  val (reg_sideleg, read_sideleg) = {
+    val reg = Reg(UInt(xLen.W))
+    (reg, Mux(usingSupervisor.B,
+      // reg & delegable_interrupts | mideleg_always_hs | delegable_pipelined_interrupts,
+      reg & delegable_pipelined_interrupts,
+      0.U))
+  }
   /* starget is the virtual address the user-mode code installs with a system
    * call. When a pipelined interrupt/exception reaches the core, this is the
    * virtual address that PC will be changed to. */
@@ -782,6 +799,8 @@ class CSRFile(
     read_mapping += CSRs.satp -> reg_satp.asUInt
     read_mapping += CSRs.sepc -> readEPC(reg_sepc).sextTo(xLen)
     read_mapping += CSRs.starget -> read_starget
+    read_mapping += CSRs.sedeleg -> read_sedeleg
+    read_mapping += CSRs.sideleg -> read_sideleg
     read_mapping += CSRs.stvec -> read_stvec
     read_mapping += CSRs.scounteren -> read_scounteren
     read_mapping += CSRs.mideleg -> read_mideleg
@@ -977,6 +996,8 @@ class CSRFile(
   val debugException = p(DebugModuleKey).map(_.debugException).getOrElse(BigInt(0x808))
   val debugTVec = Mux(reg_debug, Mux(insn_break, debugEntry.U, debugException.U), debugEntry.U)
   val delegate = usingSupervisor.B && reg_mstatus.prv <= PRV.S.U && Mux(cause(xLen-1), read_mideleg(cause_deleg_lsbs), read_medeleg(cause_deleg_lsbs))
+  val pipelinedDelegate = delegate && Mux(cause(xLen-1),
+    read_sideleg(cause_deleg_lsbs), read_sedeleg(cause_deleg_lsbs))
   val delegateVS = reg_mstatus.v && delegate && Mux(cause(xLen-1), read_hideleg(cause_deleg_lsbs), read_hedeleg(cause_deleg_lsbs))
   def mtvecBaseAlign = 2
   def mtvecInterruptAlign = {
@@ -1390,6 +1411,8 @@ class CSRFile(
       when (decoded_addr(CSRs.medeleg))  { reg_medeleg := wdata }
       when (decoded_addr(CSRs.scounteren)) { reg_scounteren := wdata }
       when (decoded_addr(CSRs.senvcfg))    { reg_senvcfg.write(wdata) }
+      when (decoded_addr(CSRs.sedeleg))  { reg_sedeleg := wdata }
+      when (decoded_addr(CSRs.sideleg))  { reg_sideleg := wdata }
     }
 
     if (usingHypervisor) {

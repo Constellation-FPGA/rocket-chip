@@ -932,6 +932,11 @@ object CSRs {
 
   /* Pipelined Interrupts/Exceptions CSRs */
   val starget = 0x5c0
+  /* sedeleg, sideleg, and sepc are already part of the architecture, so I do
+   * not need to make them myself. I include it here, so we can easily see all
+   * the CSRs that pipelined interrupts/exceptions require to function. */
+  // val sedeleg = 0x102 // NOTE: Commented out on-purpose! See comment above!
+  // val sideleg = 0x103 // NOTE: Commented out on-purpose! See comment above!
   /* End of Pipelined Interrupts/Exceptions CSRs*/
 
   val vsstatus = 0x200
