@@ -222,6 +222,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     (if (xLen == 32) new I32Decode(aluFn) else new I64Decode(aluFn)) +:
     (usingVM.option(new SVMDecode(aluFn))) ++:
     (usingSupervisor.option(new SDecode(aluFn))) ++:
+    new PipelinedDecode +:
     (usingHypervisor.option(new HypervisorDecode(aluFn))) ++:
     ((usingHypervisor && (xLen == 64)).option(new Hypervisor64Decode(aluFn))) ++:
     (usingDebug.option(new DebugDecode(aluFn))) ++:

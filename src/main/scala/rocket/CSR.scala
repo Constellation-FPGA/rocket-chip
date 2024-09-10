@@ -913,6 +913,9 @@ class CSRFile(
   val decode_table = Seq(        ECALL->       List(Y,N,N,N,N,N,N,N,N),
                                  EBREAK->      List(N,Y,N,N,N,N,N,N,N),
                                  MRET->        List(N,N,Y,N,N,N,N,N,N),
+                                 /* Pipelined Interrupts are an insn_ret */
+                                 URET->        List(N,N,Y,N,N,N,N,N,N),
+                                 /* End of Pipelined Interrupts */
                                  CEASE->       List(N,N,N,Y,N,N,N,N,N),
                                  WFI->         List(N,N,N,N,Y,N,N,N,N)) ++
     usingDebug.option(           DRET->        List(N,N,Y,N,N,N,N,N,N)) ++
