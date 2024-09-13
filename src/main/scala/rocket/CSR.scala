@@ -1173,8 +1173,16 @@ class CSRFile(
         reg_mstatus.spp := PRV.U.U
         ret_prv := reg_mstatus.spp
         reg_mstatus.v := usingHypervisor.B && reg_hstatus.spv
-        // TODO: Need to put pipelined interrupts in here for URET!
-        io.evec := readEPC(reg_sepc)
+        /* Pipelined interrupts supported */
+        /* FIXME: Using MStatus.uie is dangerous, because we never actually set
+         * this register to a value. */
+        when (reg_mstatus.uie) {
+          /* Performing a URET out of user-level pipelined interrupts/exception
+           * handler. */
+          io.evec := readEPC(reg_sepc)
+        }.otherwise {
+          io.evec := readEPC(reg_sepc)
+        }
         reg_hstatus.spv := false.B
       }.otherwise {
         reg_vsstatus.sie := reg_vsstatus.spie
