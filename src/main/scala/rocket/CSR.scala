@@ -1283,6 +1283,7 @@ class CSRFile(
       if (usingUser) {
         reg_mstatus.mprv := new_mstatus.mprv
         reg_mstatus.mpp := legalizePrivilege(new_mstatus.mpp)
+        reg_mstatus.uie := new_mstatus.uie
         if (usingSupervisor) {
           reg_mstatus.spp := new_mstatus.spp
           reg_mstatus.spie := new_mstatus.spie
