@@ -18,6 +18,7 @@ case class RocketCoreParams(
   bootFreqHz: BigInt = 0,
   useVM: Boolean = true,
   useUser: Boolean = false,
+  usePipelinedTraps: Boolean = false,
   useSupervisor: Boolean = false,
   useHypervisor: Boolean = false,
   useDebug: Boolean = true,
@@ -65,6 +66,9 @@ case class RocketCoreParams(
   val instBits: Int = if (useCompressed) 16 else 32
   val lrscCycles: Int = 80 // worst case is 14 mispredicted branches + slop
   val traceHasWdata: Boolean = debugROB.isDefined // ooo wb, so no wdata in trace
+  /* If you enable pipelined trap delegation, then you MUST have supervisor and
+   * user modes present. Pipelined traps do not function without those. */
+  require((usePipelinedTraps && (useSupervisor && useUser)) || !usePipelinedTraps)
   override val useVector = vector.isDefined
   override val vectorUseDCache = vector.map(_.useDCache).getOrElse(false)
   override def vLen = vector.map(_.vLen).getOrElse(0)
