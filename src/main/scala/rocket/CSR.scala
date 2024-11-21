@@ -1435,7 +1435,6 @@ class CSRFile(
       }
       when (decoded_addr(CSRs.sie))      { reg_mie := (reg_mie & ~sie_mask) | (wdata & sie_mask) }
       when (decoded_addr(CSRs.sscratch)) { reg_sscratch := wdata }
-      when (decoded_addr(CSRs.starget))  { reg_starget := wdata }
       when (decoded_addr(CSRs.sepc))     { reg_sepc := formEPC(wdata) }
       when (decoded_addr(CSRs.stvec))    { reg_stvec := wdata }
       when (decoded_addr(CSRs.scause))   { reg_scause := wdata & scause_mask }
@@ -1448,6 +1447,7 @@ class CSRFile(
       when (decoded_addr(CSRs.sideleg))  { reg_sideleg := wdata }
 
       if (true /* usingPipelinedTraps */) {
+        when (decoded_addr(CSRs.starget))  { reg_starget := wdata }
         when (decoded_addr(CSRs.uscratch))  { reg_uscratch := wdata }
         when (decoded_addr(CSRs.uepc))      { reg_uepc := formEPC(wdata) }
       }
