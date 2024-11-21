@@ -611,6 +611,13 @@ class CSRFile(
 
   val reg_fflags = Reg(UInt(5.W))
   val reg_frm = Reg(UInt(3.W))
+
+  val reg_fflags_care = RegInit(false.B)
+  val prev_reg_fflags = RegNext(reg_fflags)
+  // Use fflags_changed to set exception wire below to flag that an exception
+  // has occurred on a previous FP instruction.
+  val fflags_changed = reg_fflags_care && (prev_reg_fflags =/= reg_fflags)
+
   val reg_vconfig = usingVector.option(Reg(new VConfig))
   val reg_vstart = usingVector.option(Reg(UInt(maxVLMax.log2.W)))
   val reg_vxsat = usingVector.option(Reg(Bool()))
@@ -823,6 +830,7 @@ class CSRFile(
       read_mapping += CSRs.uscratch -> reg_uscratch
       read_mapping += CSRs.uepc -> readEPC(reg_uepc).sextTo(xLen)
       read_mapping += CSRs.ualready_handling -> reg_ualready_handling
+      read_mapping += CSRs.fflags_care -> reg_fflags_care
     }
   }
 
@@ -1074,7 +1082,7 @@ class CSRFile(
   io.gstatus.uxl := (if (usingUser) log2Ceil(xLen) - 4 else 0).U
   io.gstatus.sd_rv32 := (xLen == 32).B && io.gstatus.sd
 
-  val exception = insn_call || insn_break || io.exception
+  val exception = insn_call || insn_break || io.exception || fflags_changed
   assert(PopCount(insn_ret :: insn_call :: insn_break :: io.exception :: Nil) <= 1.U, "these conditions must be mutually exclusive")
 
   when (insn_wfi && !io.singleStep && !reg_debug) { reg_wfi := true.B }
@@ -1468,6 +1476,7 @@ class CSRFile(
         when (decoded_addr(CSRs.starget))  { reg_starget := wdata }
         when (decoded_addr(CSRs.uscratch))  { reg_uscratch := wdata }
         when (decoded_addr(CSRs.uepc))      { reg_uepc := formEPC(wdata) }
+        when (decoded_addr(CSRs.fflags_care))  { reg_fflags_care := wdata }
       }
     }
 
