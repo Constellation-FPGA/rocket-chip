@@ -596,6 +596,7 @@ class CSRFile(
    * virtual address that PC will be changed to. */
   val reg_starget = RegInit(0.U(vaddrBitsExtended.W))
   val reg_ucause = Reg(Bits(xLen.W))
+  val reg_uscratch = Reg(Bits(xLen.W))
   /* End of Pipelined Interrupts/Exceptions. */
 
   val reg_sepc = Reg(UInt(vaddrBitsExtended.W))
@@ -817,6 +818,7 @@ class CSRFile(
     if (true /* usingPipelinedTraps */) {
       read_mapping += CSRs.starget -> read_starget
       read_mapping += CSRs.ucause -> reg_ucause
+      read_mapping += CSRs.uscratch -> reg_uscratch
     }
   }
 
@@ -1441,6 +1443,10 @@ class CSRFile(
       when (decoded_addr(CSRs.senvcfg))    { reg_senvcfg.write(wdata) }
       when (decoded_addr(CSRs.sedeleg))  { reg_sedeleg := wdata }
       when (decoded_addr(CSRs.sideleg))  { reg_sideleg := wdata }
+
+      if (true /* usingPipelinedTraps */) {
+        when (decoded_addr(CSRs.uscratch))  { reg_uscratch := wdata }
+      }
     }
 
     if (usingHypervisor) {
