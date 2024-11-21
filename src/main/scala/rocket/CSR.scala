@@ -595,6 +595,7 @@ class CSRFile(
    * call. When a pipelined interrupt/exception reaches the core, this is the
    * virtual address that PC will be changed to. */
   val reg_starget = RegInit(0.U(vaddrBitsExtended.W))
+  val reg_uepc = Reg(UInt(vaddrBitsExtended.W))
   val reg_ucause = Reg(Bits(xLen.W))
   val reg_uscratch = Reg(Bits(xLen.W))
   /* End of Pipelined Interrupts/Exceptions. */
@@ -819,6 +820,7 @@ class CSRFile(
       read_mapping += CSRs.starget -> read_starget
       read_mapping += CSRs.ucause -> reg_ucause
       read_mapping += CSRs.uscratch -> reg_uscratch
+      read_mapping += CSRs.uepc -> readEPC(reg_uepc).sextTo(xLen)
     }
   }
 
@@ -1116,7 +1118,6 @@ class CSRFile(
       reg_hstatus.spvp := Mux(reg_mstatus.v, reg_mstatus.prv(0),reg_hstatus.spvp)
       reg_hstatus.gva := io.gva
       reg_hstatus.spv := reg_mstatus.v
-      reg_sepc := epc
       reg_stval := tval
       reg_htval := io.htval
       reg_htinst_read_pseudo := io.mhtinst_read_pseudo
@@ -1132,9 +1133,11 @@ class CSRFile(
       when (pipelinedDelegate) {
         new_prv := PRV.U.U
         reg_ucause := cause
+        reg_uepc := epc
       }.otherwise {
         new_prv := PRV.S.U
         reg_scause := cause
+        reg_sepc := epc
       }
     }.otherwise {
       reg_mstatus.v := false.B
@@ -1187,7 +1190,7 @@ class CSRFile(
         when (reg_mstatus.uie) {
           /* Performing a URET out of user-level pipelined interrupts/exception
            * handler. */
-          io.evec := readEPC(reg_sepc)
+          io.evec := readEPC(reg_uepc)
         }.otherwise {
           io.evec := readEPC(reg_sepc)
         }
@@ -1446,6 +1449,7 @@ class CSRFile(
 
       if (true /* usingPipelinedTraps */) {
         when (decoded_addr(CSRs.uscratch))  { reg_uscratch := wdata }
+        when (decoded_addr(CSRs.uepc))      { reg_uepc := formEPC(wdata) }
       }
     }
 
