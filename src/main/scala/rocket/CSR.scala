@@ -595,6 +595,7 @@ class CSRFile(
    * call. When a pipelined interrupt/exception reaches the core, this is the
    * virtual address that PC will be changed to. */
   val reg_starget = RegInit(0.U(vaddrBitsExtended.W))
+  val reg_ucause = Reg(Bits(xLen.W))
   /* End of Pipelined Interrupts/Exceptions. */
 
   val reg_sepc = Reg(UInt(vaddrBitsExtended.W))
@@ -815,6 +816,7 @@ class CSRFile(
 
     if (true /* usingPipelinedTraps */) {
       read_mapping += CSRs.starget -> read_starget
+      read_mapping += CSRs.ucause -> reg_ucause
     }
   }
 
@@ -1113,7 +1115,6 @@ class CSRFile(
       reg_hstatus.gva := io.gva
       reg_hstatus.spv := reg_mstatus.v
       reg_sepc := epc
-      reg_scause := cause
       reg_stval := tval
       reg_htval := io.htval
       reg_htinst_read_pseudo := io.mhtinst_read_pseudo
@@ -1128,8 +1129,10 @@ class CSRFile(
        * some for custom use that we can more easily hook. */
       when (pipelinedDelegate) {
         new_prv := PRV.U.U
+        reg_ucause := cause
       }.otherwise {
         new_prv := PRV.S.U
+        reg_scause := cause
       }
     }.otherwise {
       reg_mstatus.v := false.B
