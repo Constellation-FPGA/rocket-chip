@@ -938,6 +938,7 @@ object CSRs {
    * the CSRs that pipelined interrupts/exceptions require to function. */
   // val sedeleg = 0x102 // NOTE: Commented out on-purpose! See comment above!
   // val sideleg = 0x103 // NOTE: Commented out on-purpose! See comment above!
+  val ucause = 0x842
   /* End of Pipelined Interrupts/Exceptions CSRs*/
 
   val vsstatus = 0x200
@@ -1363,6 +1364,7 @@ object CSRs {
     res += sscratch
     /* Pipelined Interrupts */
     res += starget
+    res += ucause
     /* End of Pipelined Interrupts */
     res += sepc
     res += scause
