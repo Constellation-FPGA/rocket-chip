@@ -805,7 +805,6 @@ class CSRFile(
     read_mapping += CSRs.stval -> reg_stval.sextTo(xLen)
     read_mapping += CSRs.satp -> reg_satp.asUInt
     read_mapping += CSRs.sepc -> readEPC(reg_sepc).sextTo(xLen)
-    read_mapping += CSRs.starget -> read_starget
     read_mapping += CSRs.sedeleg -> read_sedeleg
     read_mapping += CSRs.sideleg -> read_sideleg
     read_mapping += CSRs.stvec -> read_stvec
@@ -813,6 +812,10 @@ class CSRFile(
     read_mapping += CSRs.mideleg -> read_mideleg
     read_mapping += CSRs.medeleg -> read_medeleg
     read_mapping += CSRs.senvcfg -> reg_senvcfg.asUInt
+
+    if (true /* usingPipelinedTraps */) {
+      read_mapping += CSRs.starget -> read_starget
+    }
   }
 
   val pmpCfgPerCSR = xLen / new PMPConfig().getWidth
