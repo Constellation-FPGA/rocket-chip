@@ -1130,7 +1130,7 @@ class CSRFile(
       /* NOTE: We hard-code delegation of illegal instruction exceptions, but
        * RISC-V reserves some exception encodings for future use AND designates
        * some for custom use that we can more easily hook. */
-      when (pipelinedDelegate) {
+      when (reg_mstatus.uie && pipelinedDelegate) {
         new_prv := PRV.U.U
         reg_ucause := cause
         reg_uepc := epc
@@ -1185,8 +1185,11 @@ class CSRFile(
         ret_prv := reg_mstatus.spp
         reg_mstatus.v := usingHypervisor.B && reg_hstatus.spv
         /* Pipelined interrupts supported */
-        /* FIXME: Using MStatus.uie is dangerous, because we never actually set
-         * this register to a value. */
+        /* MStatus.uie will work, but is not technically supported by any
+         * privileged RISC-V specification, because the N-extension was removed.
+         * But Rocket still has support for UIE in the CSRs, so we make use of
+         * it. To enable pipelined trap delegation, you must enable BOTH
+         * pipelined delagation and UIE! */
         when (reg_mstatus.uie) {
           /* Performing a URET out of user-level pipelined interrupts/exception
            * handler. */
@@ -1305,6 +1308,8 @@ class CSRFile(
       if (usingUser) {
         reg_mstatus.mprv := new_mstatus.mprv
         reg_mstatus.mpp := legalizePrivilege(new_mstatus.mpp)
+        /* M-/H-/S-mode can enable UIE on Rocket. Pipelined interrupts RELIES on
+         * UIE being set to true.B to work! */
         reg_mstatus.uie := new_mstatus.uie
         if (usingSupervisor) {
           reg_mstatus.spp := new_mstatus.spp
