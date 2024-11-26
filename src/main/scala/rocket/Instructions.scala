@@ -942,6 +942,7 @@ object CSRs {
   val uscratch = 0x840
   val uepc = 0x841
   val ucause = 0x842
+  val ualready_handling = 0x845
   /* End of Pipelined Interrupts/Exceptions CSRs*/
 
   val vsstatus = 0x200
@@ -1370,6 +1371,7 @@ object CSRs {
     res += ucause
     res += uscratch
     res += uepc
+    res += ualready_handling
     /* End of Pipelined Interrupts */
     res += sepc
     res += scause

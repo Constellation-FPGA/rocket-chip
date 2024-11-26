@@ -598,6 +598,7 @@ class CSRFile(
   val reg_uepc = Reg(UInt(vaddrBitsExtended.W))
   val reg_ucause = Reg(Bits(xLen.W))
   val reg_uscratch = Reg(Bits(xLen.W))
+  val reg_ualready_handling = RegInit(false.B)
   /* End of Pipelined Interrupts/Exceptions. */
 
   val reg_sepc = Reg(UInt(vaddrBitsExtended.W))
@@ -821,6 +822,7 @@ class CSRFile(
       read_mapping += CSRs.ucause -> reg_ucause
       read_mapping += CSRs.uscratch -> reg_uscratch
       read_mapping += CSRs.uepc -> readEPC(reg_uepc).sextTo(xLen)
+      read_mapping += CSRs.ualready_handling -> reg_ualready_handling
     }
   }
 
@@ -1130,10 +1132,14 @@ class CSRFile(
       /* NOTE: We hard-code delegation of illegal instruction exceptions, but
        * RISC-V reserves some exception encodings for future use AND designates
        * some for custom use that we can more easily hook. */
+      /* TODO: We cannot jump into a handler when we are already in the handler.
+       * If we managed to try to delegate to a handler while we are already
+       * inside a handler, we MUST jump to supervisor instead! */
       when (reg_mstatus.uie && pipelinedDelegate) {
         new_prv := PRV.U.U
         reg_ucause := cause
         reg_uepc := epc
+        reg_ualready_handling := true.B
       }.otherwise {
         new_prv := PRV.S.U
         reg_scause := cause
@@ -1194,6 +1200,7 @@ class CSRFile(
           /* Performing a URET out of user-level pipelined interrupts/exception
            * handler. */
           io.evec := readEPC(reg_uepc)
+          reg_ualready_handling := false.B
         }.otherwise {
           io.evec := readEPC(reg_sepc)
         }
