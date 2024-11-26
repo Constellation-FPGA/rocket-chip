@@ -1016,6 +1016,10 @@ class CSRFile(
   val debugEntry = p(DebugModuleKey).map(_.debugEntry).getOrElse(BigInt(0x800))
   val debugException = p(DebugModuleKey).map(_.debugException).getOrElse(BigInt(0x808))
   val debugTVec = Mux(reg_debug, Mux(insn_break, debugEntry.U, debugException.U), debugEntry.U)
+  /* NOTE: The signal for whether or not to delegate a particular trap is high
+   * for only ONE (1) clock cycle! So you can only use this signal for
+   * DISPATCHING to the proper privilege level. You CANNOT use if for returning
+   * out of a privilege level with an xRET instruction. */
   val delegate = usingSupervisor.B && reg_mstatus.prv <= PRV.S.U && Mux(cause(xLen-1), read_mideleg(cause_deleg_lsbs), read_medeleg(cause_deleg_lsbs))
   val pipelinedDelegate = delegate && Mux(cause(xLen-1),
     read_sideleg(cause_deleg_lsbs), read_sedeleg(cause_deleg_lsbs))
@@ -1195,7 +1199,9 @@ class CSRFile(
          * privileged RISC-V specification, because the N-extension was removed.
          * But Rocket still has support for UIE in the CSRs, so we make use of
          * it. To enable pipelined trap delegation, you must enable BOTH
-         * pipelined delagation and UIE! */
+         * pipelined delagation and UIE!
+         * NOTE: See NOTE above pipelinedDelegate about lifetime of
+         * pipelinedDelegate signal! */
         when (reg_mstatus.uie) {
           /* Performing a URET out of user-level pipelined interrupts/exception
            * handler. */
