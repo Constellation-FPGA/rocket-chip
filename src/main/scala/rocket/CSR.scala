@@ -440,6 +440,7 @@ class CSRFile(
     Causes.misaligned_store,
     Causes.illegal_instruction,
     Causes.user_ecall,
+    Causes.floating_point,
   )
   val delegable_hypervisor_exceptions = Seq(
     Causes.virtual_supervisor_ecall,
@@ -447,6 +448,7 @@ class CSRFile(
     Causes.load_guest_page_fault,
     Causes.virtual_instruction,
     Causes.store_guest_page_fault,
+    Causes.floating_point,
   )
   val delegable_exceptions = (
     delegable_base_exceptions
@@ -455,6 +457,7 @@ class CSRFile(
 
   val delegable_pipelined_exceptions = Seq(
     Causes.illegal_instruction,
+    Causes.floating_point,
   ).map(1 << _).sum.U
 
   val delegable_pipelined_interrupts = Seq(
@@ -609,14 +612,15 @@ class CSRFile(
   val reg_satp = Reg(new PTBR)
   val reg_wfi = withClock(io.ungated_clock) { RegInit(false.B) }
 
-  val reg_fflags = Reg(UInt(5.W))
-  val reg_frm = Reg(UInt(3.W))
+  val reg_fflags = Reg(UInt(FPConstants.FLAGS_SZ.W))
+  val reg_frm = Reg(UInt(FPConstants.RM_SZ.W))
 
-  val reg_fflags_care = RegInit(false.B)
+  val reg_fflags_care = RegInit("b10000".U(FPConstants.FLAGS_SZ.W))
   val prev_reg_fflags = RegNext(reg_fflags)
   // Use fflags_changed to set exception wire below to flag that an exception
   // has occurred on a previous FP instruction.
-  val fflags_changed = reg_fflags_care && (prev_reg_fflags =/= reg_fflags)
+  val fflags_changed = (reg_fflags_care & ((prev_reg_fflags ^ reg_fflags) & reg_fflags)).orR
+
 
   val reg_vconfig = usingVector.option(Reg(new VConfig))
   val reg_vstart = usingVector.option(Reg(UInt(maxVLMax.log2.W)))
@@ -1011,10 +1015,11 @@ class CSRFile(
       is_ret && CSR.mode(addr) === PRV.S.U && (!reg_mstatus.prv(0) || reg_hstatus.vtsr) ||
       is_sfence && (!reg_mstatus.prv(0) || reg_hstatus.vtvm))
   }
-
+  
   val cause =
     Mux(insn_call, Causes.user_ecall.U + Mux(reg_mstatus.prv(0) && reg_mstatus.v, PRV.H.U, reg_mstatus.prv),
-    Mux[UInt](insn_break, Causes.breakpoint.U, io.cause))
+    Mux[UInt](insn_break, Causes.breakpoint.U, 
+    Mux[UInt](fflags_changed, Causes.floating_point.U, io.cause)))
   val cause_lsbs = cause(log2Ceil(1 + CSR.busErrorIntCause)-1, 0)
   val cause_deleg_lsbs = cause(log2Ceil(xLen)-1,0)
   val causeIsDebugInt = cause(xLen-1) && cause_lsbs === CSR.debugIntCause.U
@@ -1098,6 +1103,7 @@ class CSRFile(
   val tval = Mux(insn_break, epc, io.tval)
 
   when (exception) {
+    printf(cf"Firing Exception with reg_fflags=$reg_fflags%b, prev_reg_fflags=$prev_reg_fflags%b, and cause=$cause%x\n")
     when (trapToDebug) {
       when (!reg_debug) {
         reg_mstatus.v := false.B

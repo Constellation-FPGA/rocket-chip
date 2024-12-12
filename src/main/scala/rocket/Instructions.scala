@@ -839,6 +839,7 @@ object Causes {
   val load_guest_page_fault = 0x15
   val virtual_instruction = 0x16
   val store_guest_page_fault = 0x17
+  val floating_point = 0x18
   val all = {
     val res = collection.mutable.ArrayBuffer[Int]()
     res += misaligned_fetch
@@ -860,6 +861,7 @@ object Causes {
     res += load_guest_page_fault
     res += virtual_instruction
     res += store_guest_page_fault
+    res += floating_point
     res.toArray
   }
 }
