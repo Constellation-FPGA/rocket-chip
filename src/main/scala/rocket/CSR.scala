@@ -133,7 +133,7 @@ class Envcfg extends Bundle {
   val cbie = UInt(2.W)
   val zero3 = UInt(3.W)
   val fiom = Bool()
-  def write(wdata: UInt) {
+  def write(wdata: UInt): Unit = {
     val new_envcfg = wdata.asTypeOf(new Envcfg)
     fiom := new_envcfg.fiom // only FIOM is writable currently
   }
@@ -614,12 +614,13 @@ class CSRFile(
 
   val reg_fflags = Reg(UInt(FPConstants.FLAGS_SZ.W))
   val reg_frm = Reg(UInt(FPConstants.RM_SZ.W))
-
-  val reg_fflags_care = RegInit("b10000".U(FPConstants.FLAGS_SZ.W))
-  val prev_reg_fflags = RegNext(reg_fflags)
+  val reg_fflags_care = RegInit(0.U(FPConstants.FLAGS_SZ.W))
+  val reg_prev_fflags = RegNext(reg_fflags)
   // Use fflags_changed to set exception wire below to flag that an exception
   // has occurred on a previous FP instruction.
-  val fflags_changed = (reg_fflags_care & ((prev_reg_fflags ^ reg_fflags) & reg_fflags)).orR
+  val reg_writing_to_fflags = RegInit(false.B)
+  reg_writing_to_fflags := io.rw.cmd.isOneOf(CSR.S, CSR.C, CSR.W) && (io.rw.addr === CSRs.fflags.U)
+  val fflags_changed = ((reg_fflags_care & (reg_prev_fflags ^ reg_fflags) & reg_fflags).orR) && !reg_writing_to_fflags
 
 
   val reg_vconfig = usingVector.option(Reg(new VConfig))
@@ -1103,7 +1104,7 @@ class CSRFile(
   val tval = Mux(insn_break, epc, io.tval)
 
   when (exception) {
-    printf(cf"Firing Exception with reg_fflags=$reg_fflags%b, prev_reg_fflags=$prev_reg_fflags%b, and cause=$cause%x\n")
+    printf(cf"Firing Exception with reg_fflags=$reg_fflags%b, reg_prev_fflags=$reg_prev_fflags%b, cause=$cause%x, io.rw.cmd=${io.rw.cmd}, reg_writing_to_fflags=$reg_writing_to_fflags%x\n")
     when (trapToDebug) {
       when (!reg_debug) {
         reg_mstatus.v := false.B
