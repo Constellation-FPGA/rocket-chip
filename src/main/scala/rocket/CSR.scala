@@ -273,6 +273,7 @@ class CSRFileIO(hasBeu: Boolean)(implicit p: Parameters) extends CoreBundle
   val rw_stall = Output(Bool()) // stall rw, rw will have no effect while rw_stall
   val eret = Output(Bool())
   val singleStep = Output(Bool())
+  val fp_xcpt = Output(Bool())
 
   val status = Output(new MStatus())
   val hstatus = Output(new HStatus())
@@ -621,6 +622,7 @@ class CSRFile(
   val reg_writing_to_fflags = RegInit(false.B)
   reg_writing_to_fflags := io.rw.cmd.isOneOf(CSR.S, CSR.C, CSR.W) && (io.rw.addr === CSRs.fflags.U)
   val fflags_changed = ((reg_fflags_care & (reg_prev_fflags ^ reg_fflags) & reg_fflags).orR) && !reg_writing_to_fflags
+  io.fp_xcpt := fflags_changed
 
 
   val reg_vconfig = usingVector.option(Reg(new VConfig))
@@ -1104,7 +1106,7 @@ class CSRFile(
   val tval = Mux(insn_break, epc, io.tval)
 
   when (exception) {
-    printf(cf"Firing Exception with reg_fflags=$reg_fflags%b, reg_prev_fflags=$reg_prev_fflags%b, cause=$cause%x, io.rw.cmd=${io.rw.cmd}, reg_writing_to_fflags=$reg_writing_to_fflags%x\n")
+    // printf(cf"Firing Exception with reg_fflags=$reg_fflags%b, reg_prev_fflags=$reg_prev_fflags%b, cause=$cause%x, io.rw.cmd=${io.rw.cmd}, reg_writing_to_fflags=$reg_writing_to_fflags%x\n")
     when (trapToDebug) {
       when (!reg_debug) {
         reg_mstatus.v := false.B
