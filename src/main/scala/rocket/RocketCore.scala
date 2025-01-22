@@ -573,8 +573,8 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
       ex_reg_rs_msb(0) := inst >> log2Ceil(bypass_sources.size)
     }
   }
-  when (!ctrl_killd || csr.io.interrupt || ibuf.io.inst(0).bits.replay) {
-    ex_reg_cause := id_cause
+  when (!ctrl_killd || csr.io.interrupt || ibuf.io.inst(0).bits.replay || csr.io.fp_xcpt) {
+    ex_reg_cause := Mux(csr.io.fp_xcpt, Causes.floating_point.U, id_cause)
     ex_reg_inst := id_inst(0)
     ex_reg_raw_inst := id_raw_inst(0)
     ex_reg_pc := ibuf.io.pc
