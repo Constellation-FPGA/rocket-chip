@@ -457,7 +457,6 @@ class CSRFile(
   ).map(1 << _).sum.U
 
   val delegable_pipelined_exceptions = Seq(
-    Causes.illegal_instruction,
     Causes.floating_point,
   ).map(1 << _).sum.U
 
