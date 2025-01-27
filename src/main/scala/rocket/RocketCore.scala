@@ -517,7 +517,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
 
   ex_reg_valid := !ctrl_killd
   ex_reg_replay := !take_pc && ibuf.io.inst(0).valid && ibuf.io.inst(0).bits.replay
-  ex_reg_xcpt := (!ctrl_killd && id_xcpt) || csr.io.fp_xcpt
+  ex_reg_xcpt := !ctrl_killd && id_xcpt
   ex_reg_xcpt_interrupt := !take_pc && ibuf.io.inst(0).valid && csr.io.interrupt
 
   when (!ctrl_killd) {
@@ -574,8 +574,8 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
       ex_reg_rs_msb(0) := inst >> log2Ceil(bypass_sources.size)
     }
   }
-  when (!ctrl_killd || csr.io.interrupt || ibuf.io.inst(0).bits.replay || csr.io.fp_xcpt) {
-    ex_reg_cause := Mux(csr.io.fp_xcpt, Causes.floating_point.U, id_cause)
+  when (!ctrl_killd || csr.io.interrupt || ibuf.io.inst(0).bits.replay) {
+    ex_reg_cause := id_cause
     ex_reg_inst := id_inst(0)
     ex_reg_raw_inst := id_raw_inst(0)
     ex_reg_pc := ibuf.io.pc
@@ -717,8 +717,8 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     wb_reg_wphit := mem_reg_wphit | bpu.io.bpwatch.map { bpw => (bpw.rvalid(0) && mem_reg_load) || (bpw.wvalid(0) && mem_reg_store) }
     wb_reg_set_vconfig := mem_reg_set_vconfig
   }
-
-  val (wb_xcpt, wb_cause) = checkExceptions(List(
+  
+  val (wb_xcpt, wb_cause): (Bool, UInt) = checkExceptions(List(
     (wb_reg_xcpt,  wb_reg_cause),
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.pf.st, Causes.store_page_fault.U),
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.pf.ld, Causes.load_page_fault.U),
@@ -727,20 +727,22 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ae.st, Causes.store_access.U),
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ae.ld, Causes.load_access.U),
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ma.st, Causes.misaligned_store.U),
-    (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ma.ld, Causes.misaligned_load.U)
+    (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ma.ld, Causes.misaligned_load.U),
+    (csr.io.fp_xcpt, Causes.floating_point.U)
   ))
 
   val wbCoverCauses = List(
     (Causes.misaligned_store, "MISALIGNED_STORE"),
     (Causes.misaligned_load, "MISALIGNED_LOAD"),
     (Causes.store_access, "STORE_ACCESS"),
-    (Causes.load_access, "LOAD_ACCESS")
+    (Causes.load_access, "LOAD_ACCESS"),
+    (Causes.floating_point, "FLOATING_POINT")
   ) ++ (if(usingVM) List(
     (Causes.store_page_fault, "STORE_PAGE_FAULT"),
     (Causes.load_page_fault, "LOAD_PAGE_FAULT")
   ) else Nil) ++ (if (usingHypervisor) List(
     (Causes.store_guest_page_fault, "STORE_GUEST_PAGE_FAULT"),
-    (Causes.load_guest_page_fault, "LOAD_GUEST_PAGE_FAULT"),
+    (Causes.load_guest_page_fault, "LOAD_GUEST_PAGE_FAULT")
   ) else Nil)
   coverExceptions(wb_xcpt, wb_cause, "WRITEBACK", wbCoverCauses)
 
