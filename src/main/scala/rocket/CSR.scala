@@ -1450,6 +1450,9 @@ class CSRFile(
           reg_mstatus.mxr := new_sstatus.mxr
           reg_mstatus.sum := new_sstatus.sum
         }
+        /* M-/H-/S-mode can enable UIE on Rocket. Pipelined interrupts RELIES on
+         * UIE being set to true.B to work! */
+        reg_mstatus.uie := new_sstatus.uie
       }
       when (decoded_addr(CSRs.sip)) {
         val new_sip = ((read_mip & ~read_mideleg) | (wdata & read_mideleg)).asTypeOf(new MIP())
