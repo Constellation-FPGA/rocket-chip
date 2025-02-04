@@ -811,6 +811,7 @@ class CSRFile(
     read_sstatus.spp := io.status.spp
     read_sstatus.spie := io.status.spie
     read_sstatus.sie := io.status.sie
+    read_sstatus.uie := io.status.uie
 
     read_mapping += CSRs.sstatus -> (read_sstatus.asUInt)(xLen-1,0)
     read_mapping += CSRs.sip -> read_sip.asUInt
