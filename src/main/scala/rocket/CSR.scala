@@ -1217,7 +1217,7 @@ class CSRFile(
          * pipelined delagation and UIE!
          * NOTE: See NOTE above pipelinedDelegate about lifetime of
          * pipelinedDelegate signal! */
-        when (reg_mstatus.uie) {
+        when (reg_ualready_handling && reg_mstatus.uie) {
           /* Performing a URET out of user-level pipelined interrupts/exception
            * handler. */
           io.evec := readEPC(reg_uepc)
