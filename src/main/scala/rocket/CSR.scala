@@ -1205,11 +1205,6 @@ class CSRFile(
     val ret_prv = WireInit(UInt(), DontCare)
     when (usingSupervisor.B && !io.rw.addr(9)) {
       when (!reg_mstatus.v) {
-        reg_mstatus.sie := reg_mstatus.spie
-        reg_mstatus.spie := true.B
-        reg_mstatus.spp := PRV.U.U
-        ret_prv := reg_mstatus.spp
-        reg_mstatus.v := usingHypervisor.B && reg_hstatus.spv
         /* Pipelined interrupts supported */
         /* MStatus.uie will work, but is not technically supported by any
          * privileged RISC-V specification, because the N-extension was removed.
@@ -1225,6 +1220,11 @@ class CSRFile(
           reg_ualready_handling := false.B
         }.otherwise {
           io.evec := readEPC(reg_sepc)
+          reg_mstatus.sie := reg_mstatus.spie
+          reg_mstatus.spie := true.B
+          reg_mstatus.spp := PRV.U.U
+          ret_prv := reg_mstatus.spp
+          reg_mstatus.v := usingHypervisor.B && reg_hstatus.spv
         }
         reg_hstatus.spv := false.B
       }.otherwise {
