@@ -1038,6 +1038,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     id_do_fence ||
     csr.io.csr_stall ||
     id_reg_pause ||
+    (!id_ctrl.fp && !io.fpu.fcsr_rdy) ||
     io.traceStall
   ctrl_killd := !ibuf.io.inst(0).valid || ibuf.io.inst(0).bits.replay || take_pc_mem_wb || ctrl_stalld || csr.io.interrupt
 
@@ -1050,7 +1051,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
   io.imem.flush_icache := wb_reg_valid && wb_ctrl.fence_i && !io.dmem.s2_nack
   io.imem.might_request := {
     imem_might_request_reg := ex_pc_valid || mem_pc_valid || io.ptw.customCSRs.disableICacheClockGate || io.vector.map(_.trap_check_busy).getOrElse(false.B)
-    imem_might_request_reg
+    imem_might_request_reg || csr.io.fp_xcpt
   }
   io.imem.progress := RegNext(wb_reg_valid && !replay_wb_common)
   io.imem.sfence.valid := wb_reg_valid && wb_reg_sfence
