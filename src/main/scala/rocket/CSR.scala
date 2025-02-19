@@ -935,23 +935,25 @@ class CSRFile(
 
   val system_insn = io.rw.cmd === CSR.I
   val hlsv = Seq(HLV_B, HLV_BU, HLV_H, HLV_HU, HLV_W, HLV_WU, HLV_D, HSV_B, HSV_H, HSV_W, HSV_D, HLVX_HU, HLVX_WU)
-  val decode_table = Seq(        ECALL->       List(Y,N,N,N,N,N,N,N,N),
-                                 EBREAK->      List(N,Y,N,N,N,N,N,N,N),
-                                 MRET->        List(N,N,Y,N,N,N,N,N,N),
+  val decode_table = Seq(        ECALL->       List(Y,N,N,N,N,N,N,N,N,N),
+                                 EBREAK->      List(N,Y,N,N,N,N,N,N,N,N),
+                                 MRET->        List(N,N,N,Y,N,N,N,N,N,N),
                                  /* Pipelined Interrupts are an insn_ret */
-                                 URET->        List(N,N,Y,N,N,N,N,N,N),
+                                 URET->        List(N,N,N,Y,N,N,N,N,N,N),
+                                 /* ESTEP are custom EBREAKS */
+                                 ESTEP->       List(N,N,Y,N,N,N,N,N,N,N),
                                  /* End of Pipelined Interrupts */
-                                 CEASE->       List(N,N,N,Y,N,N,N,N,N),
-                                 WFI->         List(N,N,N,N,Y,N,N,N,N)) ++
-    usingDebug.option(           DRET->        List(N,N,Y,N,N,N,N,N,N)) ++
-    usingNMI.option(             MNRET->       List(N,N,Y,N,N,N,N,N,N)) ++
-    coreParams.haveCFlush.option(CFLUSH_D_L1-> List(N,N,N,N,N,N,N,N,N)) ++
-    usingSupervisor.option(      SRET->        List(N,N,Y,N,N,N,N,N,N)) ++
-    usingVM.option(              SFENCE_VMA->  List(N,N,N,N,N,Y,N,N,N)) ++
-    usingHypervisor.option(      HFENCE_VVMA-> List(N,N,N,N,N,N,Y,N,N)) ++
-    usingHypervisor.option(      HFENCE_GVMA-> List(N,N,N,N,N,N,N,Y,N)) ++
-    (if (usingHypervisor)        hlsv.map(_->  List(N,N,N,N,N,N,N,N,Y)) else Seq())
-  val insn_call :: insn_break :: insn_ret :: insn_cease :: insn_wfi :: _ :: _ :: _ :: _ :: Nil = {
+                                 CEASE->       List(N,N,N,N,Y,N,N,N,N,N),
+                                 WFI->         List(N,N,N,N,N,Y,N,N,N,N)) ++
+    usingDebug.option(           DRET->        List(N,N,N,Y,N,N,N,N,N,N)) ++
+    usingNMI.option(             MNRET->       List(N,N,N,Y,N,N,N,N,N,N)) ++
+    coreParams.haveCFlush.option(CFLUSH_D_L1-> List(N,N,N,N,N,N,N,N,N,N)) ++
+    usingSupervisor.option(      SRET->        List(N,N,N,Y,N,N,N,N,N,N)) ++
+    usingVM.option(              SFENCE_VMA->  List(N,N,N,N,N,N,Y,N,N,N)) ++
+    usingHypervisor.option(      HFENCE_VVMA-> List(N,N,N,N,N,N,N,Y,N,N)) ++
+    usingHypervisor.option(      HFENCE_GVMA-> List(N,N,N,N,N,N,N,N,Y,N)) ++
+    (if (usingHypervisor)        hlsv.map(_->  List(N,N,N,N,N,N,N,N,N,Y)) else Seq())
+  val insn_call :: insn_break :: insn_step :: insn_ret :: insn_cease :: insn_wfi :: _ :: _ :: _ :: _ :: Nil = {
     val insn = ECALL.value.U | (io.rw.addr << 20)
     DecodeLogic(insn, decode_table(0)._2.map(x=>X), decode_table).map(system_insn && _.asBool)
   }
@@ -962,7 +964,7 @@ class CSRFile(
     def decodeAny(m: LinkedHashMap[Int,Bits]): Bool = m.map { case(k: Int, _: Bits) => addr === k.U }.reduce(_||_)
     def decodeFast(s: Seq[Int]): Bool = DecodeLogic(addr, s.map(_.U), (read_mapping -- s).keys.toList.map(_.U))
 
-    val _ :: is_break :: is_ret :: _ :: is_wfi :: is_sfence :: is_hfence_vvma :: is_hfence_gvma :: is_hlsv :: Nil =
+    val _ :: is_break :: is_step :: is_ret :: _ :: is_wfi :: is_sfence :: is_hfence_vvma :: is_hfence_gvma :: is_hlsv :: Nil =
       DecodeLogic(io_dec.inst, decode_table(0)._2.map(x=>X), decode_table).map(_.asBool)
     val is_counter = (addr.inRange(CSR.firstCtr.U, (CSR.firstCtr + CSR.nCtr).U) || addr.inRange(CSR.firstCtrH.U, (CSR.firstCtrH + CSR.nCtr).U))
 
@@ -1017,11 +1019,12 @@ class CSRFile(
       is_ret && CSR.mode(addr) === PRV.S.U && (!reg_mstatus.prv(0) || reg_hstatus.vtsr) ||
       is_sfence && (!reg_mstatus.prv(0) || reg_hstatus.vtvm))
   }
-  
+
   val cause =
     Mux(insn_call, Causes.user_ecall.U + Mux(reg_mstatus.prv(0) && reg_mstatus.v, PRV.H.U, reg_mstatus.prv),
-    Mux[UInt](insn_break, Causes.breakpoint.U, 
-    Mux[UInt](fflags_changed, Causes.floating_point.U, io.cause)))
+      Mux[UInt](insn_break, Causes.breakpoint.U,
+        Mux[UInt](insn_step, Causes.instruction_step.U,
+          Mux[UInt](fflags_changed, Causes.floating_point.U, io.cause))))
   val cause_lsbs = cause(log2Ceil(1 + CSR.busErrorIntCause)-1, 0)
   val cause_deleg_lsbs = cause(log2Ceil(xLen)-1,0)
   val causeIsDebugInt = cause(xLen-1) && cause_lsbs === CSR.debugIntCause.U
@@ -1069,7 +1072,7 @@ class CSRFile(
   io.ptbr := reg_satp
   io.hgatp := reg_hgatp
   io.vsatp := reg_vsatp
-  io.eret := insn_call || insn_break || insn_ret
+  io.eret := insn_call || insn_break || insn_step || insn_ret
   io.singleStep := reg_dcsr.step && !reg_debug
   io.status := reg_mstatus
   io.status.sd := io.status.fs.andR || io.status.xs.andR || io.status.vs.andR
@@ -1089,8 +1092,8 @@ class CSRFile(
   io.gstatus.uxl := (if (usingUser) log2Ceil(xLen) - 4 else 0).U
   io.gstatus.sd_rv32 := (xLen == 32).B && io.gstatus.sd
 
-  val exception = insn_call || insn_break || io.exception || fflags_changed
-  assert(PopCount(insn_ret :: insn_call :: insn_break :: io.exception :: Nil) <= 1.U, "these conditions must be mutually exclusive")
+  val exception = insn_call || insn_break || insn_step || io.exception || fflags_changed
+  assert(PopCount(insn_ret :: insn_call :: insn_break :: insn_step :: io.exception :: Nil) <= 1.U, "these conditions must be mutually exclusive")
 
   when (insn_wfi && !io.singleStep && !reg_debug) { reg_wfi := true.B }
   when (pending_interrupts.orR || io.interrupts.debug || exception) { reg_wfi := false.B }
@@ -1102,7 +1105,7 @@ class CSRFile(
   assert(!reg_singleStepped || io.retire === 0.U)
 
   val epc = formEPC(io.pc)
-  val tval = Mux(insn_break, epc, io.tval)
+  val tval = Mux(insn_break || insn_step, epc, io.tval)
 
   when (exception) {
     // printf(cf"Firing Exception with reg_fflags=$reg_fflags%b, reg_prev_fflags=$reg_prev_fflags%b, cause=$cause%x, io.rw.cmd=${io.rw.cmd}, reg_writing_to_fflags=$reg_writing_to_fflags%x\n")
