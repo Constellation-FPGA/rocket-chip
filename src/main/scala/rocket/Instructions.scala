@@ -123,6 +123,8 @@ object Instructions {
   def DRET               = BitPat("b01111011001000000000000001110011")
   def EBREAK             = BitPat("b00000000000100000000000001110011")
   def ECALL              = BitPat("b00000000000000000000000001110011")
+  /* ESTEP is a custom EBREAK instruction that we can control. */
+  def ESTEP              = BitPat("b00000000001100000000000001110011")
   def FADD_D             = BitPat("b0000001??????????????????1010011")
   def FADD_H             = BitPat("b0000010??????????????????1010011")
   def FADD_Q             = BitPat("b0000011??????????????????1010011")
