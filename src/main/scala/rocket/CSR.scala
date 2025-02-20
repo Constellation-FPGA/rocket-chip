@@ -442,6 +442,7 @@ class CSRFile(
     Causes.illegal_instruction,
     Causes.user_ecall,
     Causes.floating_point,
+    Causes.instruction_step
   )
   val delegable_hypervisor_exceptions = Seq(
     Causes.virtual_supervisor_ecall,
@@ -450,6 +451,7 @@ class CSRFile(
     Causes.virtual_instruction,
     Causes.store_guest_page_fault,
     Causes.floating_point,
+    Causes.instruction_step,
   )
   val delegable_exceptions = (
     delegable_base_exceptions
