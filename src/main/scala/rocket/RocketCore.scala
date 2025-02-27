@@ -1037,7 +1037,9 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     id_do_fence ||
     csr.io.csr_stall ||
     id_reg_pause ||
-    (!id_ctrl.fp && !io.fpu.fcsr_rdy) ||
+    /* We stall the whole core whenever the FPU is not ready to perform work,
+     * regardless of the kind of instruction this current one is. */
+    !io.fpu.fcsr_rdy ||
     io.traceStall
   ctrl_killd := !ibuf.io.inst(0).valid || ibuf.io.inst(0).bits.replay || take_pc_mem_wb || ctrl_stalld || csr.io.interrupt
 
