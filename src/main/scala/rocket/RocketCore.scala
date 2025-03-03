@@ -1299,6 +1299,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     def clear(en: Bool, addr: UInt): Unit = update(en, _next & ~mask(en, addr))
     def read(addr: UInt): Bool = r(addr)
     def readBypassed(addr: UInt): Bool = _next(addr)
+    def orR(): Bool = r.orR
 
     private val _r = RegInit(0.U(n.W))
     private val r = if (zero) (_r >> 1 << 1) else _r
