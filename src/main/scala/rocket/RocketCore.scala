@@ -597,7 +597,9 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
   val ex_sfence = usingVM.B && ex_ctrl.mem && (ex_ctrl.mem_cmd === M_SFENCE || ex_ctrl.mem_cmd === M_HFENCEV || ex_ctrl.mem_cmd === M_HFENCEG)
 
   val (ex_xcpt, ex_cause) = checkExceptions(List(
-    (ex_reg_xcpt_interrupt || ex_reg_xcpt, ex_reg_cause)))
+    (ex_reg_xcpt_interrupt || ex_reg_xcpt, ex_reg_cause),
+    (csr.io.fp_xcpt, Causes.floating_point.U),
+  ))
 
   val exCoverCauses = idCoverCauses
   coverExceptions(ex_xcpt, ex_cause, "EXECUTE", exCoverCauses)
@@ -716,8 +718,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     wb_reg_wphit := mem_reg_wphit | bpu.io.bpwatch.map { bpw => (bpw.rvalid(0) && mem_reg_load) || (bpw.wvalid(0) && mem_reg_store) }
     wb_reg_set_vconfig := mem_reg_set_vconfig
   }
-  // CURSED, need a temp var here to please the scala gods
-  val fp_tinker: Bool = csr.io.fp_xcpt
+
   val (wb_xcpt, wb_cause): (Bool, UInt) = checkExceptions(List(
     (wb_reg_xcpt,  wb_reg_cause),
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.pf.st, Causes.store_page_fault.U),
@@ -728,7 +729,6 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ae.ld, Causes.load_access.U),
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ma.st, Causes.misaligned_store.U),
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ma.ld, Causes.misaligned_load.U),
-    (fp_tinker, Causes.floating_point.U)
   ))
 
   val wbCoverCauses = List(
