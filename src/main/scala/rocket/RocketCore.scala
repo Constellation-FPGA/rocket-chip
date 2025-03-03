@@ -540,7 +540,11 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
         ex_ctrl.sel_alu2 := A2_ZERO
       }
     }
-    ex_reg_flush_pipe := id_ctrl.fence_i || id_csr_flush
+    /* We must flush the pipeline if this FP instruction caused an exception,
+     * which can only happen at this point, since decoding an FP instruction is
+     * always OK. All instructions after the FP instruction must be ignored,
+     * even if those later instructions are also exceptional. */
+    ex_reg_flush_pipe := id_ctrl.fence_i || id_csr_flush || csr.io.fp_xcpt
     ex_reg_load_use := id_load_use
     ex_reg_hls := usingHypervisor.B && id_system_insn && id_ctrl.mem_cmd.isOneOf(M_XRD, M_XWR, M_HLVX)
     ex_reg_mem_size := Mux(usingHypervisor.B && id_system_insn, id_inst(0)(27, 26), id_inst(0)(13, 12))
