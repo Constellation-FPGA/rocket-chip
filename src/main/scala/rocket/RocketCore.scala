@@ -588,7 +588,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
   }
 
   // replay inst in ex stage?
-  val ex_pc_valid = ex_reg_valid || ex_reg_replay || ex_reg_xcpt_interrupt
+  val ex_pc_valid: Bool = ex_reg_valid || ex_reg_replay || ex_reg_xcpt_interrupt || csr.io.fp_xcpt
   val wb_dcache_miss = wb_ctrl.mem && !io.dmem.resp.valid
   val replay_ex_structural = ex_ctrl.mem && !io.dmem.req.ready ||
                              ex_ctrl.div && !div.io.req.ready ||
