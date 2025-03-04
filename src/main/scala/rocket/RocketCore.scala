@@ -1015,7 +1015,10 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     fp_sboard.clear((dmem_resp_replay && dmem_resp_fpu) || v_ll, io.fpu.ll_resp_tag)
     fp_sboard.clear(io.fpu.sboard_clr, io.fpu.sboard_clra)
 
-    checkHazards(fp_hazard_targets, fp_sboard.read _)
+    /* In addition to structural hazards, we also stall ID if the FPU is
+     * currently busy. If the FPU is busy, that means we cannot let any
+     * instruction leave decode, since the EXE stage is "filled". */
+    checkHazards(fp_hazard_targets, fp_sboard.read _) || !io.fpu.fcsr_rdy
   } else false.B
 
   val dcache_blocked = {
@@ -1033,7 +1036,9 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     csr.io.singleStep && (ex_reg_valid || mem_reg_valid || wb_reg_valid) ||
     id_csr_en && csr.io.decode(0).fp_csr && !io.fpu.fcsr_rdy ||
     id_csr_en && csr.io.decode(0).vector_csr && id_vec_busy ||
-    id_ctrl.fp && id_stall_fpu ||
+    /* We stall the whole core whenever the FPU is not ready to perform work,
+     * regardless of the kind of instruction this current one is. */
+    id_stall_fpu
     id_ctrl.mem && dcache_blocked || // reduce activity during D$ misses
     id_ctrl.rocc && rocc_blocked || // reduce activity while RoCC is busy
     id_ctrl.div && (!(div.io.req.ready || (div.io.resp.valid && !wb_wxd)) || div.io.req.valid) || // reduce odds of replay
@@ -1041,9 +1046,6 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     id_do_fence ||
     csr.io.csr_stall ||
     id_reg_pause ||
-    /* We stall the whole core whenever the FPU is not ready to perform work,
-     * regardless of the kind of instruction this current one is. */
-    !io.fpu.fcsr_rdy ||
     io.traceStall
   ctrl_killd := !ibuf.io.inst(0).valid || ibuf.io.inst(0).bits.replay || take_pc_mem_wb || ctrl_stalld || csr.io.interrupt
 
