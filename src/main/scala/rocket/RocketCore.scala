@@ -430,13 +430,15 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     (id_xcpt1.gf.inst, Causes.fetch_guest_page_fault.U),
     (id_xcpt1.ae.inst, Causes.fetch_access.U),
     (id_virtual_insn,  Causes.virtual_instruction.U),
+    (id_illegal_insn & csr.io.fp_xcpt, Causes.floating_point.U),
     (id_illegal_insn,  Causes.illegal_instruction.U)))
 
   val idCoverCauses = List(
     (CSR.debugTriggerCause, "DEBUG_TRIGGER"),
     (Causes.breakpoint, "BREAKPOINT"),
     (Causes.fetch_access, "FETCH_ACCESS"),
-    (Causes.illegal_instruction, "ILLEGAL_INSTRUCTION")
+    (Causes.illegal_instruction, "ILLEGAL_INSTRUCTION"),
+    (Causes.floating_point, "FLOATING_POINT"),
   ) ++ (if (usingVM) List(
     (Causes.fetch_page_fault, "FETCH_PAGE_FAULT")
   ) else Nil)
@@ -728,7 +730,6 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ae.ld, Causes.load_access.U),
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ma.st, Causes.misaligned_store.U),
     (wb_reg_valid && wb_ctrl.mem && io.dmem.s2_xcpt.ma.ld, Causes.misaligned_load.U),
-    (fp_tinker, Causes.floating_point.U)
   ))
 
   val wbCoverCauses = List(
@@ -736,7 +737,6 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     (Causes.misaligned_load, "MISALIGNED_LOAD"),
     (Causes.store_access, "STORE_ACCESS"),
     (Causes.load_access, "LOAD_ACCESS"),
-    (Causes.floating_point, "FLOATING_POINT")
   ) ++ (if(usingVM) List(
     (Causes.store_page_fault, "STORE_PAGE_FAULT"),
     (Causes.load_page_fault, "LOAD_PAGE_FAULT")

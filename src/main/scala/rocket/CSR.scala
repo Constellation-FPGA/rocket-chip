@@ -623,7 +623,7 @@ class CSRFile(
   // has occurred on a previous FP instruction.
   val writing_to_fflags = io.rw.cmd.isOneOf(CSR.S, CSR.C, CSR.W) && (io.rw.addr === CSRs.fflags.U)
   val fflags_changed = ((reg_fflags_care & (reg_fflags ^ io.fcsr_flags.bits) & io.fcsr_flags.bits).orR) && !writing_to_fflags && io.fcsr_flags.valid
-  io.fp_xcpt := fflags_changed
+  io.fp_xcpt := reg_fflags_care.orR
 
 
   val reg_vconfig = usingVector.option(Reg(new VConfig))
