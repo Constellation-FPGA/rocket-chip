@@ -274,6 +274,7 @@ class CSRFileIO(hasBeu: Boolean)(implicit p: Parameters) extends CoreBundle
   val eret = Output(Bool())
   val singleStep = Output(Bool())
   val fp_xcpt = Output(Bool())
+  val fflags_mask = Output(UInt(FPConstants.FLAGS_SZ.W))
 
   val status = Output(new MStatus())
   val hstatus = Output(new HStatus())
@@ -619,6 +620,7 @@ class CSRFile(
   val reg_fflags = Reg(UInt(FPConstants.FLAGS_SZ.W))
   val reg_frm = Reg(UInt(FPConstants.RM_SZ.W))
   val reg_fflags_care = RegInit(0.U(FPConstants.FLAGS_SZ.W))
+  io.fflags_mask := reg_fflags_care
   // Use fflags_changed to set exception wire below to flag that an exception
   // has occurred on a previous FP instruction.
   val writing_to_fflags = io.rw.cmd.isOneOf(CSR.S, CSR.C, CSR.W) && (io.rw.addr === CSRs.fflags.U)
