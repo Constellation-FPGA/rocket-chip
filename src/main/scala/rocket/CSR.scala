@@ -275,6 +275,7 @@ class CSRFileIO(hasBeu: Boolean)(implicit p: Parameters) extends CoreBundle
   val singleStep = Output(Bool())
   val fp_xcpt = Output(Bool())
   val fflags_mask = Output(UInt(FPConstants.FLAGS_SZ.W))
+  val value_xcpt_mask = Output(UInt(xLen.W))
 
   val status = Output(new MStatus())
   val hstatus = Output(new HStatus())
@@ -627,6 +628,8 @@ class CSRFile(
   val fflags_changed = ((reg_fflags_care & (reg_fflags ^ io.fcsr_flags.bits) & io.fcsr_flags.bits).orR) && !writing_to_fflags && io.fcsr_flags.valid
   io.fp_xcpt := fflags_changed
 
+  val reg_value_xcpt_mask = RegInit(0.U(xLen.W))
+  io.value_xcpt_mask := reg_value_xcpt_mask
 
   val reg_vconfig = usingVector.option(Reg(new VConfig))
   val reg_vstart = usingVector.option(Reg(UInt(maxVLMax.log2.W)))
@@ -842,6 +845,7 @@ class CSRFile(
       read_mapping += CSRs.uepc -> readEPC(reg_uepc).sextTo(xLen)
       read_mapping += CSRs.ualready_handling -> reg_ualready_handling
       read_mapping += CSRs.fflags_care -> reg_fflags_care
+      read_mapping += CSRs.value_xcpt_mask -> reg_value_xcpt_mask
     }
   }
 
@@ -1496,6 +1500,7 @@ class CSRFile(
         when (decoded_addr(CSRs.uscratch))  { reg_uscratch := wdata }
         when (decoded_addr(CSRs.uepc))      { reg_uepc := formEPC(wdata) }
         when (decoded_addr(CSRs.fflags_care))  { reg_fflags_care := wdata }
+        when (decoded_addr(CSRs.value_xcpt_mask))  { reg_value_xcpt_mask := wdata }
       }
     }
 
