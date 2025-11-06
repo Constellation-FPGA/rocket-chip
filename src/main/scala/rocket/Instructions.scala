@@ -950,6 +950,8 @@ object CSRs {
   val ucause = 0x842
   val ualready_handling = 0x845
   val fflags_care = 0x880
+
+  val value_xcpt_mask = 0x890
   /* End of Pipelined Interrupts/Exceptions CSRs*/
 
   val vsstatus = 0x200
@@ -1380,6 +1382,7 @@ object CSRs {
     res += uepc
     res += ualready_handling
     res += fflags_care
+    res += value_xcpt_mask
     /* End of Pipelined Interrupts */
     res += sepc
     res += scause
