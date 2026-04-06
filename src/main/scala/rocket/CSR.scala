@@ -463,6 +463,9 @@ class CSRFile(
     Causes.floating_point,
     Causes.illegal_instruction,
     Causes.instruction_step,
+    Causes.fetch_page_fault,
+    Causes.load_page_fault,
+    Causes.store_page_fault,
   ).map(1 << _).sum.U
 
   val delegable_pipelined_interrupts = Seq(
