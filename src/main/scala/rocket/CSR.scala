@@ -1160,10 +1160,10 @@ class CSRFile(
       /* NOTE: We hard-code delegation of illegal instruction exceptions, but
        * RISC-V reserves some exception encodings for future use AND designates
        * some for custom use that we can more easily hook. */
-      /* TODO: We cannot jump into a handler when we are already in the handler.
+      /* NOTE: We cannot jump into a handler when we are already in the handler.
        * If we managed to try to delegate to a handler while we are already
        * inside a handler, we MUST jump to supervisor instead! */
-      when (reg_mstatus.uie && pipelinedDelegate) {
+      when (reg_mstatus.uie && pipelinedDelegate && !reg_ualready_handling) {
         new_prv := PRV.U.U
         reg_ucause := cause
         reg_uepc := epc
