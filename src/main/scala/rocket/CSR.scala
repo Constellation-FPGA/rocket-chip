@@ -1044,7 +1044,10 @@ class CSRFile(
    * DISPATCHING to the proper privilege level. You CANNOT use if for returning
    * out of a privilege level with an xRET instruction. */
   val delegate = usingSupervisor.B && reg_mstatus.prv <= PRV.S.U && Mux(cause(xLen-1), read_mideleg(cause_deleg_lsbs), read_medeleg(cause_deleg_lsbs))
-  val pipelinedDelegate = delegate && Mux(cause(xLen-1),
+  /* NOTE: We cannot jump into a handler when we are already in the handler.
+   * If we managed to try to delegate to a handler while we are already
+   * inside a handler, we MUST jump to supervisor instead! */
+  val pipelinedDelegate = delegate && !reg_ualready_handling && Mux(cause(xLen-1),
     read_sideleg(cause_deleg_lsbs), read_sedeleg(cause_deleg_lsbs))
   val delegateVS = reg_mstatus.v && delegate && Mux(cause(xLen-1), read_hideleg(cause_deleg_lsbs), read_hedeleg(cause_deleg_lsbs))
   def mtvecBaseAlign = 2
@@ -1160,10 +1163,7 @@ class CSRFile(
       /* NOTE: We hard-code delegation of illegal instruction exceptions, but
        * RISC-V reserves some exception encodings for future use AND designates
        * some for custom use that we can more easily hook. */
-      /* NOTE: We cannot jump into a handler when we are already in the handler.
-       * If we managed to try to delegate to a handler while we are already
-       * inside a handler, we MUST jump to supervisor instead! */
-      when (reg_mstatus.uie && pipelinedDelegate && !reg_ualready_handling) {
+      when (reg_mstatus.uie && pipelinedDelegate) {
         new_prv := PRV.U.U
         reg_ucause := cause
         reg_uepc := epc
