@@ -609,7 +609,7 @@ class CSRFile(
   val reg_uepc = Reg(UInt(vaddrBitsExtended.W))
   val reg_ucause = Reg(Bits(xLen.W))
   val reg_uscratch = Reg(Bits(xLen.W))
-  val reg_ualready_handling = RegInit(false.B)
+  val reg_salready_handling = RegInit(false.B)
   /* End of Pipelined Interrupts/Exceptions. */
 
   val reg_sepc = Reg(UInt(vaddrBitsExtended.W))
@@ -843,7 +843,8 @@ class CSRFile(
       read_mapping += CSRs.uscratch -> reg_uscratch
       read_mapping += CSRs.uepc -> readEPC(reg_uepc).sextTo(xLen)
       read_mapping += CSRs.ucause -> reg_ucause
-      read_mapping += CSRs.ualready_handling -> reg_ualready_handling
+      read_mapping += CSRs.salready_handling -> reg_salready_handling
+      read_mapping += CSRs.ualready_handling -> reg_salready_handling
       read_mapping += CSRs.fflags_care -> reg_fflags_care
     }
   }
@@ -1050,7 +1051,7 @@ class CSRFile(
   /* NOTE: We cannot jump into a handler when we are already in the handler.
    * If we managed to try to delegate to a handler while we are already
    * inside a handler, we MUST jump to supervisor instead! */
-  val pipelinedDelegate = delegate && !reg_ualready_handling && Mux(cause(xLen-1),
+  val pipelinedDelegate = delegate && !reg_salready_handling && Mux(cause(xLen-1),
     read_sideleg(cause_deleg_lsbs), read_sedeleg(cause_deleg_lsbs))
   val delegateVS = reg_mstatus.v && delegate && Mux(cause(xLen-1), read_hideleg(cause_deleg_lsbs), read_hedeleg(cause_deleg_lsbs))
   def mtvecBaseAlign = 2
@@ -1170,7 +1171,7 @@ class CSRFile(
         new_prv := PRV.U.U
         reg_ucause := cause
         reg_uepc := epc
-        reg_ualready_handling := true.B
+        reg_salready_handling := true.B
       }.otherwise {
         new_prv := PRV.S.U
         reg_scause := cause
@@ -1224,11 +1225,11 @@ class CSRFile(
          * pipelined delagation and UIE!
          * NOTE: See NOTE above pipelinedDelegate about lifetime of
          * pipelinedDelegate signal! */
-        when ((reg_mstatus.prv === PRV.U.U) && reg_ualready_handling && reg_mstatus.uie) {
+        when ((reg_mstatus.prv === PRV.U.U) && reg_salready_handling && reg_mstatus.uie) {
           /* Performing a URET out of user-level pipelined interrupts/exception
            * handler. */
           io.evec := readEPC(reg_uepc)
-          reg_ualready_handling := false.B
+          reg_salready_handling := false.B
         }.otherwise {
           io.evec := readEPC(reg_sepc)
           reg_mstatus.sie := reg_mstatus.spie
@@ -1499,6 +1500,11 @@ class CSRFile(
         when (decoded_addr(CSRs.uscratch))  { reg_uscratch := wdata }
         when (decoded_addr(CSRs.uepc))      { reg_uepc := formEPC(wdata) }
         when (decoded_addr(CSRs.fflags_care))  { reg_fflags_care := wdata }
+        when (decoded_addr(CSRs.salready_handling))  {
+          when (reg_mstatus.prv >= PRV.S.U) {
+            reg_salready_handling := wdata
+          }
+        }
       }
     }
 
