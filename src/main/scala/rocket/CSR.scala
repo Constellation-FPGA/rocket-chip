@@ -840,9 +840,9 @@ class CSRFile(
 
     if (true /* usingPipelinedTraps */) {
       read_mapping += CSRs.starget -> read_starget
-      read_mapping += CSRs.ucause -> reg_ucause
       read_mapping += CSRs.uscratch -> reg_uscratch
       read_mapping += CSRs.uepc -> readEPC(reg_uepc).sextTo(xLen)
+      read_mapping += CSRs.ucause -> reg_ucause
       read_mapping += CSRs.ualready_handling -> reg_ualready_handling
       read_mapping += CSRs.fflags_care -> reg_fflags_care
     }
