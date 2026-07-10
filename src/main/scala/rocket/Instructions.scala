@@ -949,6 +949,7 @@ object CSRs {
   val uepc = 0x841
   val ucause = 0x842
   val utval = 0x843
+  val usscratch = 0x844
   val salready_handling = 0x5c1
   val ualready_handling = 0x845
   val fflags_care = 0x880

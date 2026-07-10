@@ -610,6 +610,7 @@ class CSRFile(
   val reg_ucause = Reg(Bits(xLen.W))
   val reg_utval = Reg(UInt(vaddrBitsExtended.W))
   val reg_uscratch = Reg(Bits(xLen.W))
+  val reg_usscratch = Reg(Bits(xLen.W))
   val reg_salready_handling = RegInit(false.B)
   /* End of Pipelined Interrupts/Exceptions. */
 
@@ -842,6 +843,7 @@ class CSRFile(
     if (true /* usingPipelinedTraps */) {
       read_mapping += CSRs.starget -> read_starget
       read_mapping += CSRs.uscratch -> reg_uscratch
+      read_mapping += CSRs.usscratch -> reg_usscratch
       read_mapping += CSRs.uepc -> readEPC(reg_uepc).sextTo(xLen)
       read_mapping += CSRs.ucause -> reg_ucause
       read_mapping += CSRs.utval -> reg_utval.sextTo(xLen)
@@ -1501,6 +1503,7 @@ class CSRFile(
       if (true /* usingPipelinedTraps */) {
         when (decoded_addr(CSRs.starget))  { reg_starget := wdata }
         when (decoded_addr(CSRs.uscratch))  { reg_uscratch := wdata }
+        when (decoded_addr(CSRs.usscratch))  { reg_usscratch := wdata }
         when (decoded_addr(CSRs.uepc))      { reg_uepc := formEPC(wdata) }
         when (decoded_addr(CSRs.utval))    { reg_utval := wdata }
         when (decoded_addr(CSRs.fflags_care))  { reg_fflags_care := wdata }
