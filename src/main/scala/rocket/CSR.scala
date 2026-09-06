@@ -1155,16 +1155,6 @@ class CSRFile(
       reg_vsstatus.sie := false.B
       new_prv := PRV.S.U
     }.elsewhen (delegate && nmie) {
-      reg_mstatus.v := false.B
-      reg_hstatus.spvp := Mux(reg_mstatus.v, reg_mstatus.prv(0),reg_hstatus.spvp)
-      reg_hstatus.gva := io.gva
-      reg_hstatus.spv := reg_mstatus.v
-      reg_stval := tval
-      reg_htval := io.htval
-      reg_htinst_read_pseudo := io.mhtinst_read_pseudo
-      reg_mstatus.spie := reg_mstatus.sie
-      reg_mstatus.spp := reg_mstatus.prv
-      reg_mstatus.sie := false.B
       /* Delegate illegal instruction exceptions to user-mode in a really hacky
        * way. This is not the nicest way to do this, but it works for our initial
        * investigations. */
@@ -1173,14 +1163,27 @@ class CSRFile(
        * some for custom use that we can more easily hook. */
       when (reg_mstatus.uie && pipelinedDelegate) {
         new_prv := PRV.U.U
+        /* KBEs do not change the "previous privilege" or "previous interrupt
+         * enable" because they are limited to user-space only. */
         reg_ucause := cause
         reg_uepc := epc
         reg_utval := tval
         reg_salready_handling := true.B
       }.otherwise {
         new_prv := PRV.S.U
+        reg_mstatus.spp := reg_mstatus.prv
+        reg_mstatus.spie := reg_mstatus.sie
+        reg_mstatus.sie := false.B
         reg_scause := cause
         reg_sepc := epc
+        reg_stval := tval
+        /* Now set all the hypervisor (H-extension) state. */
+        reg_mstatus.v := false.B
+        reg_htval := io.htval
+        reg_htinst_read_pseudo := io.mhtinst_read_pseudo
+        reg_hstatus.spvp := Mux(reg_mstatus.v, reg_mstatus.prv(0),reg_hstatus.spvp)
+        reg_hstatus.gva := io.gva
+        reg_hstatus.spv := reg_mstatus.v
       }
     }.otherwise {
       reg_mstatus.v := false.B
