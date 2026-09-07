@@ -1165,8 +1165,10 @@ class CSRFile(
        * some for custom use that we can more easily hook. */
       when (reg_mstatus.uie && pipelinedDelegate) {
         new_prv := PRV.U.U
-        /* KBEs do not change the "previous privilege" or "previous interrupt
-         * enable" because they are limited to user-space only. */
+        reg_mstatus.upie := reg_mstatus.uie
+        reg_mstatus.uie := false.B
+        /* KBEs do not change the "previous privilege" because they are limited
+         * to user-space only. */
         reg_ucause := cause
         reg_uepc := epc
         reg_utval := tval
