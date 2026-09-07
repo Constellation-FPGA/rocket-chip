@@ -1057,7 +1057,7 @@ class CSRFile(
    * inside a handler, we MUST jump to supervisor instead!
    *
    * It is disallowed for a KBE to occur from a non-user context/privilege. */
-  val pipelinedDelegate = delegate && !reg_salready_handling && (reg_mstatus.prv === PRV.U.U) &&
+  val pipelinedDelegate = delegate && !reg_salready_handling && (reg_mstatus.prv === PRV.U.U) && reg_mstatus.uie
       Mux(cause(xLen-1), read_sideleg(cause_deleg_lsbs), read_sedeleg(cause_deleg_lsbs))
   val delegateVS = reg_mstatus.v && delegate && Mux(cause(xLen-1), read_hideleg(cause_deleg_lsbs), read_hedeleg(cause_deleg_lsbs))
   def mtvecBaseAlign = 2
