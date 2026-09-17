@@ -1243,6 +1243,9 @@ class CSRFile(
                  "Attempting to perform a URET with incorrect CSR & privilege status")
           io.evec := readEPC(reg_uepc)
           reg_salready_handling := false.B
+          reg_mstatus.uie := reg_mstatus.upie
+          reg_mstatus.upie := true.B
+          ret_prv := PRV.U.U
         }.otherwise {
           io.evec := readEPC(reg_sepc)
           reg_mstatus.sie := reg_mstatus.spie
