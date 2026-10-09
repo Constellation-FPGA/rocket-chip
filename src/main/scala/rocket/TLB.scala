@@ -63,6 +63,10 @@ class TLBReq(lgMaxSize: Int)(implicit p: Parameters) extends CoreBundle()(p) {
   /** virtualization mode */
   val v = Bool()
 
+  /** Should this TLB request from the HTLB just be passed through? */
+  val htlb_passthrough = Bool()
+  /** Is the address being requested a handle address? */
+  val handle = Bool()
 }
 
 class TLBExceptions extends Bundle {
@@ -665,6 +669,7 @@ class TLB(instruction: Boolean, lgMaxSize: Int, cfg: TLBConfig)(implicit edge: T
   io.ptw.req.bits.bits.vstage1 := r_vstage1_en
   io.ptw.req.bits.bits.stage2 := r_stage2_en
   io.ptw.req.bits.bits.need_gpa := r_need_gpa
+  io.ptw.req.bits.bits.handle := false.B
 
   if (usingVM) {
     when(io.ptw.req.fire && io.ptw.req.bits.valid) {

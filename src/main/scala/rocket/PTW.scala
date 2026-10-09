@@ -25,6 +25,8 @@ class PTWReq(implicit p: Parameters) extends CoreBundle()(p) {
   val need_gpa = Bool()
   val vstage1 = Bool()
   val stage2 = Bool()
+  /** Is the addr being requested for a handle? */
+  val handle = Bool()
 }
 
 /** PTE info from L2TLB to TLB
@@ -760,6 +762,20 @@ class PTW(n: Int)(implicit edge: TLEdgeOut, p: Parameters) extends CoreModule()(
   ccover(mem_resp_valid && count === (pgLevels-1).U && pte.table(), s"TOO_DEEP", s"page table too deep")
   ccover(io.mem.s2_nack, "NACK", "D$ nacked page-table access")
   ccover(state === s_wait2 && io.mem.s2_xcpt.ae.ld, "AE", "access exception while walking page table")
+
+  midas.targetutils.PerfCounter(arb.io.out.bits.valid && state === s_ready, "l2_tlb_accesses", "l2_tlb_accesses")
+  midas.targetutils.PerfCounter(io.dpath.perf.l2miss, "l2_tlb_miss", "l2_tlb_miss")
+  midas.targetutils.PerfCounter(io.dpath.perf.l2miss && r_req.handle, "l2_tlb_miss_from_handle_translation", "l2_tlb_miss_from_handle_translation")
+  midas.targetutils.PerfCounter(
+      (state === s_req),
+      "ptw_req_latency",
+      "ptw_req_latency",
+    )
+  midas.targetutils.PerfCounter(
+      (state === s_wait1 || state === s_wait2 || state === s_wait3),
+      "ptw_wait_latency",
+      "ptw_wait_latency",
+    )
 
   } // leaving gated-clock domain
 
