@@ -443,7 +443,7 @@ class CSRFile(
     Causes.illegal_instruction,
     Causes.user_ecall,
     Causes.floating_point,
-    Causes.instruction_step
+    Causes.instruction_step,
   )
   val delegable_hypervisor_exceptions = Seq(
     Causes.virtual_supervisor_ecall,
@@ -483,7 +483,8 @@ class CSRFile(
     Causes.user_ecall,
     Causes.fetch_page_fault,
     Causes.load_page_fault,
-    Causes.store_page_fault).map(1 << _).sum.U
+    Causes.store_page_fault,
+  ).map(1 << _).sum.U
 
   val (hs_delegable_interrupts, mideleg_always_hs) = {
     val always = WireDefault(0.U.asTypeOf(new MIP()))
