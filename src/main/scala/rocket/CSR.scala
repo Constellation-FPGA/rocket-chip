@@ -447,6 +447,7 @@ class CSRFile(
     Causes.user_ecall,
     Causes.floating_point,
     Causes.instruction_step,
+    Causes.handle_fault,
   )
   val delegable_hypervisor_exceptions = Seq(
     Causes.virtual_supervisor_ecall,
@@ -456,6 +457,7 @@ class CSRFile(
     Causes.store_guest_page_fault,
     Causes.floating_point,
     Causes.instruction_step,
+    Causes.handle_fault,
   )
   val delegable_exceptions = (
     delegable_base_exceptions
@@ -469,6 +471,7 @@ class CSRFile(
     Causes.fetch_page_fault,
     Causes.load_page_fault,
     Causes.store_page_fault,
+    Causes.handle_fault,
   ).map(1 << _).sum.U
 
   val delegable_pipelined_interrupts = Seq(
@@ -487,6 +490,7 @@ class CSRFile(
     Causes.fetch_page_fault,
     Causes.load_page_fault,
     Causes.store_page_fault,
+    Causes.handle_fault,
   ).map(1 << _).sum.U
 
   val (hs_delegable_interrupts, mideleg_always_hs) = {
