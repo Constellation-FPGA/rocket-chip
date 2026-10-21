@@ -289,8 +289,8 @@ class CSRFileIO(hasBeu: Boolean)(implicit p: Parameters) extends CoreBundle
   val retire = Input(UInt(log2Up(1+retireWidth).W))
   val cause = Input(UInt(xLen.W))
   val pc = Input(UInt(vaddrBitsExtended.W))
-  val tval = Input(UInt(vaddrBitsExtended.W))
-  val htval = Input(UInt(((maxSVAddrBits + 1) min xLen).W))
+  val tval = Input(UInt(xLen.W))
+  val htval = Input(UInt(xLen.W))
   val mhtinst_read_pseudo = Input(Bool())
   val gva = Input(Bool())
   val time = Output(UInt(xLen.W))
@@ -530,8 +530,8 @@ class CSRFile(
   val reg_mip = Reg(new MIP)
   val reg_mepc = Reg(UInt(vaddrBitsExtended.W))
   val reg_mcause = RegInit(0.U(xLen.W))
-  val reg_mtval = Reg(UInt(vaddrBitsExtended.W))
-  val reg_mtval2 = Reg(UInt(((maxSVAddrBits + 1) min xLen).W))
+  val reg_mtval = Reg(UInt(xLen.W))
+  val reg_mtval2 = Reg(UInt(xLen.W))
   val reg_mscratch = Reg(Bits(xLen.W))
   val mtvecWidth = paddrBits min xLen
   val reg_mtvec = mtvecInit match {
@@ -589,7 +589,7 @@ class CSRFile(
   val reg_vsscratch = Reg(Bits(xLen.W))
   val reg_vsepc = Reg(UInt(vaddrBitsExtended.W))
   val reg_vscause = Reg(Bits(xLen.W))
-  val reg_vstval = Reg(UInt(vaddrBitsExtended.W))
+  val reg_vstval = Reg(UInt(xLen.W))
   val reg_vsatp = Reg(new PTBR)
 
   /* Pipelined Interrupts/Exceptions. */
@@ -616,7 +616,7 @@ class CSRFile(
   val reg_starget = RegInit(0.U(vaddrBitsExtended.W))
   val reg_uepc = Reg(UInt(vaddrBitsExtended.W))
   val reg_ucause = Reg(Bits(xLen.W))
-  val reg_utval = Reg(UInt(vaddrBitsExtended.W))
+  val reg_utval = Reg(UInt(xLen.W))
   val reg_uscratch = Reg(Bits(xLen.W))
   val reg_usscratch = Reg(Bits(xLen.W))
   val reg_salready_handling = RegInit(false.B)
@@ -624,7 +624,7 @@ class CSRFile(
 
   val reg_sepc = Reg(UInt(vaddrBitsExtended.W))
   val reg_scause = Reg(Bits(xLen.W))
-  val reg_stval = Reg(UInt(vaddrBitsExtended.W))
+  val reg_stval = Reg(UInt(xLen.W))
   val reg_sscratch = Reg(Bits(xLen.W))
   val reg_stvec = Reg(UInt((if (usingHypervisor) vaddrBitsExtended else vaddrBits).W))
   val reg_satp = Reg(new PTBR)
