@@ -48,11 +48,8 @@ class CustomCSRs(implicit p: Parameters) extends CoreBundle {
   protected def l2TLBAccessCSRId = 0xc6
   protected def l2TLBAccessCSR: Option[CustomCSR] = None
 
-  protected def handleTracingCSRId = 0xc7
-  protected def handleTracingCSR: Option[CustomCSR] = None
-
   // If you override this, you'll want to concatenate super.decls
-  def decls: Seq[CustomCSR] = bpmCSR.toSeq ++ chickenCSR ++ htBaseCSR ++ htSizeCSR ++ htDumpCSR ++ htInvalCSR ++ l2TLBAccessCSR ++ handleTracingCSR
+  def decls: Seq[CustomCSR] = bpmCSR.toSeq ++ chickenCSR ++ htBaseCSR ++ htSizeCSR ++ htDumpCSR ++ htInvalCSR ++ l2TLBAccessCSR
 
   val csrs = Vec(decls.size, new CustomCSRIO)
 
@@ -67,9 +64,9 @@ class CustomCSRs(implicit p: Parameters) extends CoreBundle {
   def htBase = getOrElse(htBaseCSR, _.value, "h0".U(xLen.W))
   def htSize = getOrElse(htSizeCSR, _.value, "h0".U(xLen.W))
   def htDump = getOrElse(htDumpCSR, _.value, "h0".U(xLen.W))
+  // FIXME: The Handle invalidation CSR should be Handle.HANDLE_ID_BITS wide.
   def htInval = getOrElse(htInvalCSR, _.value, "h0".U(xLen.W))
   def l2TLBAccess = getOrElse(l2TLBAccessCSR, _.value, "h0".U(xLen.W))
-  def handleTracing = getOrElse(handleTracingCSR, _.value, "h0".U(xLen.W))
 
   protected def getByIdOrElse[T](id: Int, f: CustomCSRIO => T, alt: T): T = {
     val idx = decls.indexWhere(_.id == id)
